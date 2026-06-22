@@ -1,0 +1,78 @@
+model CycleData {
+  id                      String   @id @default(cuid())
+  cycle_start_date        String   // format "YYYY-MM-DD"
+  cycle_length            Int      @default(28)
+  period_length           Int      @default(5)
+  fitness_goal            String   @default("general_fitness")
+  contraception_type      String   @default("none")
+  tracking_method         String   @default("calendar")
+  pill_progestogen        String?
+  cycle_regular           Boolean  @default(true)
+  symptoms                String[]
+  daily_checkins          String[]
+  preferred_workout_types String[]
+  available_equipment     String[]
+
+  created_by              String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("cycle_data")
+}
+
+model DailyLog {
+  id          String   @id @default(cuid())
+  date        String   // format "YYYY-MM-DD"
+  phase       String?  // menstrual, follicular, ovulatory, luteal
+  cycle_day   Int?
+  mood        String?  // exhausted, low, okay, good, amazing
+  checkins    String[] // workout, walk, self_care, drank_water, ate_well, rest
+  notes       String?
+
+  created_by  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("daily_logs")
+}
+
+model SymptomLog {
+  id         String   @id @default(cuid())
+  date       String   // format "YYYY-MM-DD"
+  symptoms   String[]
+  severity   String   @default("mild") // mild, moderate, severe
+  notes      String?
+
+  created_by String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("symptom_logs")
+}
+
+model PhaseGuide {
+  id        String   @id // menstrual, follicular, ovulatory, luteal
+  label     String
+  emoji     String
+  days      String
+  color     String
+  softBg    String
+  tagline   String
+  hormones  Json     // array of { name: string, level: number, desc: string }
+  physical  String[]
+  training  String[]
+  nutrition String[]
+  avoid     String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("phase_guides")
+}
+

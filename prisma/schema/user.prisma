@@ -1,0 +1,82 @@
+model User {
+  id           String  @id @default(cuid())
+  deviceId     String? @unique
+  email        String? @unique
+  username     String? @unique
+  passwordHash String?
+  name         String?
+  phone        String?
+  avatarUrl    String?
+  role         Role    @default(USER)
+  isVerified   Boolean @default(false)
+  isBlocked    Boolean @default(false)
+  deletedAt    DateTime?
+  fcmToken     String?
+  platform     String? // "ios" or "android"
+  language     String  @default("en") // "en", "tr", "ar"
+  otpCode      String?
+  otpExpiresAt DateTime?
+
+  // Strava integration tokens (removed)
+  // strava_access_token     String?
+  // strava_refresh_token    String?
+  // strava_token_expires_at Int?
+  // strava_athlete_id       String?
+  // strava_athlete_name     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  userProfile      UserProfile?
+  subscription     Subscription?
+  cycleData        CycleData[]
+  dailyLogs        DailyLog[]
+  symptomLogs      SymptomLog[]
+  workoutLogs      WorkoutLog[]
+  workoutSessions  WorkoutSession[]
+  personalRecords  PersonalRecord[]
+  communityPosts   CommunityPost[]
+  comments         PostComment[]
+  notifications    Notification[]
+  savedWorkouts    SavedWorkout[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                  String   @id @default(cuid())
+  height_cm           Float?
+  weight_kg           Float?
+  age                 Int?
+  activity_level      String   @default("moderately_active")
+  injuries            String[]
+  exercise_dislikes   String[]
+  dietary_preferences String   @default("none")
+  device_token        String?
+  device_platform     String?
+
+  created_by          String   @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationship back to User via email
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  type      String   @default("yearly") // "weekly", "monthly", "yearly"
+  startDate DateTime @default(now())
+  endDate   DateTime
+  token     String?  // Receipt or transaction token
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}

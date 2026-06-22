@@ -1,0 +1,32 @@
+model Food {
+  id        String   @id @default(cuid())
+  emoji     String
+  name      String
+  cat       String
+  phases    String[]
+  why       String
+  macros    Json     // stores { cal, pro, carb, fat }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("foods")
+}
+
+model Recipe {
+  id          String   @id @default(cuid())
+  emoji       String
+  name        String
+  phases      String[]
+  meal        String
+  prepTime    String
+  cals        String
+  tagline     String
+  why         String
+  macros      Json     // stores { cal, pro, carb, fat }
+  ingredients Json     // stores array of { n, a }
+  steps       String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("recipes")
+}

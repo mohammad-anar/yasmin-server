@@ -1,0 +1,57 @@
+model ContraceptionOption {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  icon      String
+  title     String
+  desc      String
+  tag       String
+  accent    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contraception_options")
+}
+
+model ContraceptionDetailOption {
+  id                String   @id @default(cuid())
+  contraceptionKey  String
+  questionKey       String
+  questionLabel     String
+  type              String   // 'select' or 'toggle'
+  value             String
+  label             String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("contraception_detail_options")
+}
+
+model GoalOption {
+  id        String   @id @default(cuid())
+  value     String   @unique
+  label     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("goal_options")
+}
+
+model SymptomOption {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("symptom_options")
+}
+
+model DailyCheckInOption {
+  id        String   @id @default(cuid())
+  icon      String
+  label     String   @unique
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("daily_check_in_options")
+}

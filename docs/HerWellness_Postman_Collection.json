@@ -1,0 +1,544 @@
+{
+  "info": {
+    "name": "HerWellness API Collection",
+    "description": "Complete API documentation and request examples for the HerWellness mobile app.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "YOUR_BEARER_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\",\n  \"username\": \"fitness_jane\",\n  \"name\": \"Jane Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "2. Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "3. Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "4. Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "5. Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetToken\": \"temp_jwt_token_here\",\n  \"newPassword\": \"newsecurepassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "6. Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "7. Update User Info",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Updated\",\n  \"username\": \"jane_updated\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "8. Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "change-password"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "9. Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Onboarding & Profile",
+      "item": [
+        {
+          "name": "1. Get Onboarding Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/onboarding/options",
+              "host": ["{{base_url}}"],
+              "path": ["api", "onboarding", "options"]
+            }
+          }
+        },
+        {
+          "name": "2. Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "profile"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "3. Create/Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"height_cm\": 165,\n  \"weight_kg\": 60.5,\n  \"fitness_level\": \"Intermediate\",\n  \"goal\": \"Lose Weight\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "profile"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cycle Tracking",
+      "item": [
+        {
+          "name": "1. Get Cycle Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cycle/cycle-data",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cycle", "cycle-data"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "2. Create Cycle Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2023-10-01\",\n  \"endDate\": \"2023-10-05\",\n  \"cycleLength\": 28,\n  \"periodLength\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cycle/cycle-data",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cycle", "cycle-data"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "3. Get Daily Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/cycle/daily-logs?date=2023-10-15",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cycle", "daily-logs"],
+              "query": [
+                { "key": "date", "value": "2023-10-15" }
+              ]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "4. Log Daily Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2023-10-15\",\n  \"flowLevel\": \"Medium\",\n  \"notes\": \"Feeling great!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cycle/daily-logs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cycle", "daily-logs"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "5. Log Symptoms",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2023-10-15\",\n  \"symptoms\": [\"headache\", \"bloating\"],\n  \"severity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/cycle/symptom-logs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "cycle", "symptom-logs"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workouts & PRs",
+      "item": [
+        {
+          "name": "1. Get Workout Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/workout/workout-sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workout", "workout-sessions"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "2. Start Workout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_name\": \"Full Body Strength\",\n  \"duration_minutes\": 0,\n  \"completed\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/workout/workout-sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workout", "workout-sessions"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "3. Finish Workout Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration_minutes\": 45,\n  \"completed\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/workout/workout-sessions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workout", "workout-sessions", ":id"],
+              "variable": [
+                { "key": "id", "value": "SESSION_ID_HERE" }
+              ]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "4. Log Personal Record (PR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exercise_name\": \"Squat\",\n  \"weight_kg\": 80,\n  \"reps\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/workout/personal-records",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workout", "personal-records"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Community",
+      "item": [
+        {
+          "name": "1. Get Posts Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/community/posts?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "community", "posts"],
+              "query": [
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2. Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Just hit a new PR!\",\n  \"category\": \"Fitness\",\n  \"image_url\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/community/posts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "community", "posts"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "3. Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_id\": \"POST_ID_HERE\",\n  \"content\": \"Awesome job!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/community/comments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "community", "comments"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "4. Like Post",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"likes\": 13\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/community/posts/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "community", "posts", ":id"],
+              "variable": [
+                { "key": "id", "value": "POST_ID_HERE" }
+              ]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Integration & IAP",
+      "item": [
+        {
+          "name": "1. Upload File (Image)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/integration/files/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "integration", "files", "upload"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "2. Verify Apple App Store IAP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiptData\": \"base64_encoded_receipt_string_from_apple\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/integration/iap/verify-apple",
+              "host": ["{{base_url}}"],
+              "path": ["api", "integration", "iap", "verify-apple"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        },
+        {
+          "name": "3. Verify Google Play IAP",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packageName\": \"com.herwellness.app\",\n  \"productId\": \"monthly_sub\",\n  \"token\": \"purchase_token_from_google_billing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/integration/iap/verify-google",
+              "host": ["{{base_url}}"],
+              "path": ["api", "integration", "iap", "verify-google"]
+            },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{access_token}}", "type": "string" } ] }
+          }
+        }
+      ]
+    }
+  ]
+}

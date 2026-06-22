@@ -1,0 +1,86 @@
+model WorkoutLog {
+  id               String   @id @default(cuid())
+  date             String?  // format "YYYY-MM-DD"
+  workout_name     String
+  duration_minutes Float?
+  completed        Boolean  @default(false)
+  notes            String?
+
+  created_by       String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("workout_logs")
+}
+
+model WorkoutSession {
+  id               String   @id @default(cuid())
+  workout_name     String
+  date             String   // format "YYYY-MM-DD"
+  duration_minutes Float?
+  exercises        Json?    // stores list of exercises and sets
+  total_volume     Float?
+  notes            String?
+  completed        Boolean  @default(false)
+
+  created_by       String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("workout_sessions")
+}
+
+model PersonalRecord {
+  id            String   @id @default(cuid())
+  exercise_name String
+  weight_kg     Float
+  reps          Int
+  date_achieved String   // format "YYYY-MM-DD"
+  one_rep_max   Float?
+
+  created_by    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("personal_records")
+}
+
+model Workout {
+  id            String   @id @default(cuid())
+  name          String
+  desc          String
+  phase         String[]
+  intensity     String
+  duration      String
+  duration_mins Int
+  bodypart      String
+  equipment     String
+  phaseNote     String
+  exercises     Json      // stores the list of exercises and sets
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  savedBy       SavedWorkout[]
+
+  @@map("workouts")
+}
+
+model SavedWorkout {
+  id        String   @id @default(cuid())
+  userId    String
+  workoutId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workoutId])
+  @@map("saved_workouts")
+}

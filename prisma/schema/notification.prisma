@@ -1,0 +1,17 @@
+model Notification {
+  id                  String   @id @default(cuid())
+  type                String   // personal_record, workout_milestone, streak
+  title               String
+  message             String
+  read                Boolean  @default(false)
+  related_record_id   String?
+  related_record_type String?  // personal_record, workout_session
+
+  created_by          String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [created_by], references: [email], onDelete: Cascade)
+
+  @@map("notifications")
+}

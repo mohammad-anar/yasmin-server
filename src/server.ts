@@ -1,0 +1,81 @@
+import app from "./app.js";
+import config from "./config/index.js";
+import { seedSuperAdmin } from "./db/seedSuperAdmin.js";
+import { seedOnboardingOptions } from "./db/seedOnboarding.js";
+import { seedWorkouts } from "./db/seedWorkouts.js";
+import { seedNutrition } from "./db/seedNutrition.js";
+import { seedPhaseGuides } from "./db/seedPhaseGuides.js";
+import { seedDashboardData } from "./db/seedDashboardData.js";
+import { initSocket } from "./helpers/socketHelper.js";
+import { initFirebase } from "./helpers/firebaseHelper.js";
+
+let server: any;
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception detected. Shutting down...");
+  console.error(error);
+  process.exit(1);
+});
+
+async function bootstrap() {
+  try {
+    await seedSuperAdmin();
+    await seedOnboardingOptions();
+    await seedWorkouts();
+    await seedNutrition();
+    await seedPhaseGuides();
+    await seedDashboardData();
+
+
+    server = app.listen(Number(config.port), "0.0.0.0", () => {
+      // Initialize Socket.io
+      initSocket(server);
+
+      // Initialize Firebase Admin SDK
+      initFirebase();
+
+      // Start real-time draft heartbeat
+      // startDraftEngine();
+
+      console.log(`🚀 Server running on port ${config.port}`);
+      console.log(`🔗 Local: http://localhost:${config.port}`);
+      console.log(`🔗 Network: http://10.10.7.111:${config.port}`);
+    });
+  } catch (error) {
+    console.error("Error during server startup:", error);
+    process.exit(1);
+  }
+}
+
+process.on("unhandledRejection", (error) => {
+  console.error("Unhandled Rejection detected. Shutting down...");
+  console.error(error);
+
+  if (server) {
+    server.close(() => {
+      process.exit(1);
+    });
+  } else {
+    process.exit(1);
+  }
+});
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received.");
+  if (server) {
+    server.close(() => {
+      process.exit(0);
+    });
+  }
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT received.");
+  if (server) {
+    server.close(() => {
+      process.exit(0);
+    });
+  }
+});
+
+bootstrap();
