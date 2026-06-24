@@ -118,7 +118,10 @@ export const initSocket = (server: any) => {
 };
 
 export const getIO = () => {
-  if (!io) throw new Error("Socket.io not initialized!");
+  if (!io) {
+    console.warn("⚠️ Socket.io not initialized! Skipping socket operations.");
+    return null;
+  }
   return io;
 };
 
@@ -131,17 +134,21 @@ export const getSocketIds = (userId: string): string[] => {
  * e.g. emitDraftEvent(leagueId, "draft:pick", { ... })
  */
 export const emitDraftEvent = (leagueId: string, event: string, data: any) => {
-  const socket = getIO();
-  socket.to(`draft:${leagueId}`).emit(event, data);
+  const ioInstance = getIO();
+  if (ioInstance) {
+    ioInstance.to(`draft:${leagueId}`).emit(event, data);
+  }
 };
 
 /**
  * Emit a notification to a specific user.
  */
 export const emitNotification = (userId: string, data: any) => {
-  const socket = getIO();
-  const socketIds = getSocketIds(userId);
-  socketIds.forEach((id) => socket.to(id).emit("notification", data));
+  const ioInstance = getIO();
+  if (ioInstance) {
+    const socketIds = getSocketIds(userId);
+    socketIds.forEach((id) => ioInstance.to(id).emit("notification", data));
+  }
 };
 
 /**
@@ -149,9 +156,11 @@ export const emitNotification = (userId: string, data: any) => {
  */
 export const emitToAdmins = (event: string, data: any) => {
   try {
-    const io = getIO();
-    io.to("admin").emit(event, data);
-    console.log(`📢 Emitted event '${event}' to all connected admins.`);
+    const ioInstance = getIO();
+    if (ioInstance) {
+      ioInstance.to("admin").emit(event, data);
+      console.log(`📢 Emitted event '${event}' to all connected admins.`);
+    }
   } catch (err) {
     console.error(`❌ Error emitting event to admins:`, err);
   }
