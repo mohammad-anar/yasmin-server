@@ -21,6 +21,41 @@ const makeTokenPair = (payload: { id: string; email: string; role: string }) => 
   return { access_token, refresh_token };
 };
 
+const formatUserResponse = async (user: any) => {
+  const subscription = user.subscription || await prisma.subscription.findUnique({
+    where: { userId: user.id }
+  });
+
+  const now = new Date();
+  const trialDurationMs = 7 * 24 * 60 * 60 * 1000;
+  const trialExpiresAt = new Date(new Date(user.createdAt).getTime() + trialDurationMs);
+  const isTrialActive = now <= trialExpiresAt;
+
+  let isSubscriptionActive = false;
+  if (subscription) {
+    isSubscriptionActive = new Date(subscription.endDate) > now;
+  }
+
+  const hasPremiumAccess = user.role?.toUpperCase() === 'ADMIN' || isTrialActive || isSubscriptionActive;
+
+  const { passwordHash, otpCode, otpExpiresAt, ...userRest } = user;
+
+  return {
+    ...userRest,
+    role: userRest.role.toLowerCase(),
+    subscription: subscription ? {
+      id: subscription.id,
+      type: subscription.type,
+      startDate: subscription.startDate,
+      endDate: subscription.endDate,
+      isActive: isSubscriptionActive
+    } : null,
+    trialExpiresAt: trialExpiresAt.toISOString(),
+    isTrialActive,
+    hasPremiumAccess
+  };
+};
+
 // ─── Register ─────────────────────────────────────────────────────────────────
 const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -59,10 +94,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const payload = { id: newUser.id, email: newUser.email!, role: newUser.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
 
+    const userWithSub = await formatUserResponse(newUser);
+
     res.status(StatusCodes.CREATED).json({
       access_token,
       refresh_token,
-      user: { ...newUser, role: newUser.role.toLowerCase() }
+      user: userWithSub
     });
   } catch (error) {
     next(error);
@@ -100,10 +137,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     const payload = { id: user.id, email: user.email!, role: user.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
 
+    const userWithSub = await formatUserResponse(user);
+
     res.status(StatusCodes.OK).json({
       access_token,
       refresh_token,
-      user: { ...user, role: user.role.toLowerCase() }
+      user: userWithSub
     });
   } catch (error) {
     next(error);
@@ -145,10 +184,14 @@ const me = async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
-    const dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      include: { subscription: true }
+    });
     if (!dbUser) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
-    res.status(StatusCodes.OK).json({ ...dbUser, role: dbUser.role.toLowerCase() });
+    const userWithSub = await formatUserResponse(dbUser);
+    res.status(StatusCodes.OK).json(userWithSub);
   } catch (error) {
     next(error);
   }
@@ -173,8 +216,13 @@ const updateMe = async (req: Request, res: Response, next: NextFunction) => {
       delete data.password;
     }
 
-    const updated = await prisma.user.update({ where: { email: user.email }, data });
-    res.status(StatusCodes.OK).json({ ...updated, role: updated.role.toLowerCase() });
+    const updated = await prisma.user.update({
+      where: { email: user.email },
+      data,
+      include: { subscription: true }
+    });
+    const userWithSub = await formatUserResponse(updated);
+    res.status(StatusCodes.OK).json(userWithSub);
   } catch (error) {
     next(error);
   }

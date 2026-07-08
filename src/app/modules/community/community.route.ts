@@ -1,6 +1,7 @@
 import express from "express";
 import { CommunityController } from "./community.controller.js";
 import auth from "../../middlewares/auth.js";
+import subscriptionGuard from "../../middlewares/subscriptionGuard.js";
 import { jwtHelper } from "../../../helpers/jwtHelper.js";
 import config from "../../../config/index.js";
 import { Secret } from "jsonwebtoken";
@@ -23,20 +24,21 @@ const optionalAuth = async (req: any, res: any, next: any) => {
 };
 
 // Posts routes
-router.post("/posts", auth(), CommunityController.createPost);
+router.post("/posts", auth(), subscriptionGuard, CommunityController.createPost);
 router.get("/posts", optionalAuth, CommunityController.getPosts);
 router.get("/posts/:id", optionalAuth, CommunityController.getPostById);
-router.put("/posts/:id", auth(), CommunityController.updatePost);
-router.delete("/posts/:id", auth(), CommunityController.deletePost);
+router.put("/posts/:id", auth(), subscriptionGuard, CommunityController.updatePost);
+router.delete("/posts/:id", auth(), subscriptionGuard, CommunityController.deletePost);
 
 // Comments routes
-router.post("/comments", auth(), CommunityController.createComment);
+router.post("/comments", auth(), subscriptionGuard, CommunityController.createComment);
 router.get("/comments", optionalAuth, CommunityController.getComments);
-router.delete("/comments/:id", auth(), CommunityController.deleteComment);
+router.delete("/comments/:id", auth(), subscriptionGuard, CommunityController.deleteComment);
 
 // Reports routes
 router.post("/reports", optionalAuth, CommunityController.createReport);
-router.get("/reports", auth("ADMIN"), CommunityController.getReports);
-router.put("/reports/:id", auth("ADMIN"), CommunityController.updateReport);
+router.get("/reports", auth("ADMIN"), subscriptionGuard, CommunityController.getReports);
+router.put("/reports/:id", auth("ADMIN"), subscriptionGuard, CommunityController.updateReport);
 
 export const CommunityRoutes = router;
+

@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { IntegrationController } from "./integration.controller.js";
 import auth from "../../middlewares/auth.js";
+import subscriptionGuard from "../../middlewares/subscriptionGuard.js";
 
 const router = express.Router();
 
@@ -27,10 +28,11 @@ const upload = multer({ storage });
 
 // Upload and Coach AI
 router.post("/files/upload", auth(), upload.single("file"), IntegrationController.uploadFile);
-router.post("/ai/coach", auth(), IntegrationController.invokeLLM);
+router.post("/ai/coach", auth(), subscriptionGuard, IntegrationController.invokeLLM);
 
 // In-app purchase verification
 router.post("/iap/verify-apple", auth(), IntegrationController.verifyAppleIAP);
 router.post("/iap/verify-google", auth(), IntegrationController.verifyGoogleIAP);
 
 export const IntegrationRoutes = router;
+

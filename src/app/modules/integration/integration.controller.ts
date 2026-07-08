@@ -114,6 +114,36 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
     const { receiptData } = req.body;
     if (!receiptData) throw new ApiError(StatusCodes.BAD_REQUEST, "receiptData required");
+
+    // Simulated/Mock Checkout for development and testing
+    if (receiptData === "mock_monthly_receipt" || receiptData === "mock_annual_receipt") {
+      const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
+      const subType = receiptData === "mock_monthly_receipt" ? "monthly" : "yearly";
+      const durationMs = subType === "monthly" ? 30 * 24 * 3600 * 1000 : 365 * 24 * 3600 * 1000;
+      const sub = await prisma.subscription.upsert({
+        where: { userId: dbUser.id },
+        create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(Date.now() + durationMs), token: receiptData },
+        update: { type: subType, endDate: new Date(Date.now() + durationMs), token: receiptData },
+      });
+
+      emitToAdmins("subscription_created", {
+        subscription: sub,
+        user: {
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          avatarUrl: dbUser.avatarUrl,
+        },
+      });
+
+      return res.status(StatusCodes.OK).json({
+        valid: true,
+        isPremium: true,
+        expiresDate: sub.endDate.toISOString(),
+        productId: subType === "monthly" ? "com.herwellnessapp.monthly" : "com.herwellnessapp.annual"
+      });
+    }
+
     const bundleId = process.env.APPLE_BUNDLE_ID;
     let result = await verifyWithApple(receiptData, APPLE_VERIFY_URL_PROD);
     if (result.status === 21007) result = await verifyWithApple(receiptData, APPLE_VERIFY_URL_SANDBOX);
