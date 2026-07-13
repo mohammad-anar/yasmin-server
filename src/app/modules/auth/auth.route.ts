@@ -11,6 +11,7 @@ router.post("/refresh-token", AuthController.refreshToken);
 router.get("/public-settings", AuthController.publicSettings);
 router.post("/forgot-password", AuthController.forgotPassword);
 router.post("/verify-otp", AuthController.verifyOtp);
+router.post("/verify-signup-otp", AuthController.verifySignupOtp);
 router.post("/reset-password", AuthController.resetPassword);
 
 // ─── Authenticated user routes ─────────────────────────────────────────────

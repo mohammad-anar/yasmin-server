@@ -21,7 +21,7 @@ const getNotifications = async (req: Request, res: Response, next: NextFunction)
 const updateNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.notification.findUnique({ where: { id } });
@@ -41,7 +41,7 @@ const updateNotification = async (req: Request, res: Response, next: NextFunctio
 const deleteNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.notification.findUnique({ where: { id } });

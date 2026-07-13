@@ -62,7 +62,7 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 
 const getPostById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const result = await prisma.communityPost.findUnique({
       where: { id },
       include: {
@@ -81,7 +81,7 @@ const getPostById = async (req: Request, res: Response, next: NextFunction) => {
 const updatePost = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.communityPost.findUnique({ where: { id } });
@@ -108,7 +108,7 @@ const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.communityPost.findUnique({ where: { id } });
@@ -170,7 +170,7 @@ const getComments = async (req: Request, res: Response, next: NextFunction) => {
 const deleteComment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.postComment.findUnique({ where: { id } });
@@ -224,7 +224,7 @@ const getReports = async (req: Request, res: Response, next: NextFunction) => {
 const updateReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || user.role?.toLowerCase() !== "admin") {
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }

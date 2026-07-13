@@ -80,6 +80,10 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
     const passwordHash = await bcrypt.hash(password, Number(config.bcrypt_salt_round || 10));
 
+    // Generate 4-digit OTP for email verification
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -87,19 +91,29 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         username: username || email.split("@")[0],
         name: name || "",
         role: "USER",
-        isVerified: true
+        isVerified: false,
+        otpCode,
+        otpExpiresAt,
       }
     });
 
+    console.log(`🔑 Signup OTP for ${email}: ${otpCode}`);
+
+    // Send verification email (non-blocking — don't fail registration if email fails)
+    const emailVal = emailTemplate.createAccount({ name: name || email, email, otp: Number(otpCode) });
+    emailHelper.sendEmail(emailVal).catch((err: any) => console.error("Signup email failed:", err));
+
+    // Return tokens immediately so app can proceed even if email fails
     const payload = { id: newUser.id, email: newUser.email!, role: newUser.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
-
     const userWithSub = await formatUserResponse(newUser);
 
     res.status(StatusCodes.CREATED).json({
       access_token,
       refresh_token,
-      user: userWithSub
+      user: userWithSub,
+      pending_verification: true,
+      message: "Account created. Please verify your email with the OTP sent."
     });
   } catch (error) {
     next(error);
@@ -350,7 +364,7 @@ const adminGetUser = async (req: Request, res: Response, next: NextFunction) => 
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
@@ -376,7 +390,7 @@ const adminBlockUser = async (req: Request, res: Response, next: NextFunction) =
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
@@ -404,7 +418,7 @@ const adminDeleteUser = async (req: Request, res: Response, next: NextFunction) 
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
@@ -499,6 +513,61 @@ const forgotPassword = async (req: Request, res: Response, next: NextFunction) =
     res.status(StatusCodes.OK).json({
       success: true,
       message: "OTP sent successfully to your email",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Verify Signup OTP ────────────────────────────────────────────────────────
+const verifySignupOtp = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Email and OTP are required");
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
+    }
+
+    // If already verified, just return tokens (idempotent)
+    if (user.isVerified && !user.otpCode) {
+      const payload = { id: user.id, email: user.email!, role: user.role.toLowerCase() };
+      const { access_token, refresh_token } = makeTokenPair(payload);
+      const userWithSub = await formatUserResponse(user);
+      return res.status(StatusCodes.OK).json({ access_token, refresh_token, user: userWithSub });
+    }
+
+    if (!user.otpCode || !user.otpExpiresAt) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "OTP has expired or is invalid. Please register again.");
+    }
+
+    if (new Date() > new Date(user.otpExpiresAt)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "OTP code has expired");
+    }
+
+    if (user.otpCode !== otp.toString()) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Incorrect OTP code");
+    }
+
+    // Mark verified and clear OTP
+    const verified = await prisma.user.update({
+      where: { email },
+      data: { isVerified: true, otpCode: null, otpExpiresAt: null },
+      include: { subscription: true }
+    });
+
+    const payload = { id: verified.id, email: verified.email!, role: verified.role.toLowerCase() };
+    const { access_token, refresh_token } = makeTokenPair(payload);
+    const userWithSub = await formatUserResponse(verified);
+
+    res.status(StatusCodes.OK).json({
+      access_token,
+      refresh_token,
+      user: userWithSub,
+      message: "Email verified successfully"
     });
   } catch (error) {
     next(error);
@@ -604,5 +673,6 @@ export const AuthController = {
   adminStats,
   forgotPassword,
   verifyOtp,
+  verifySignupOtp,
   resetPassword,
 };

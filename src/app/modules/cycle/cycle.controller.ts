@@ -101,7 +101,7 @@ const getCycleData = async (req: Request, res: Response, next: NextFunction) => 
 const updateCycleData = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.cycleData.findUnique({ where: { id } });
@@ -137,7 +137,7 @@ const updateCycleData = async (req: Request, res: Response, next: NextFunction) 
 const deleteCycleData = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.cycleData.findUnique({ where: { id } });
@@ -195,7 +195,7 @@ const getDailyLogs = async (req: Request, res: Response, next: NextFunction) => 
 const updateDailyLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.dailyLog.findUnique({ where: { id } });
@@ -229,7 +229,7 @@ const updateDailyLog = async (req: Request, res: Response, next: NextFunction) =
 const deleteDailyLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.dailyLog.findUnique({ where: { id } });
@@ -273,7 +273,7 @@ const getSymptomLogs = async (req: Request, res: Response, next: NextFunction) =
 const updateSymptomLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.symptomLog.findUnique({ where: { id } });
@@ -293,7 +293,7 @@ const updateSymptomLog = async (req: Request, res: Response, next: NextFunction)
 const deleteSymptomLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.symptomLog.findUnique({ where: { id } });

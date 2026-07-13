@@ -42,7 +42,7 @@ const createFood = async (req: Request, res: Response, next: NextFunction) => {
 
 const updateFood = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data = req.body;
 
     const existing = await prisma.food.findUnique({ where: { id } });
@@ -63,7 +63,7 @@ const updateFood = async (req: Request, res: Response, next: NextFunction) => {
 
 const deleteFood = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const existing = await prisma.food.findUnique({ where: { id } });
     if (!existing) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Food not found");
@@ -120,7 +120,7 @@ const createRecipe = async (req: Request, res: Response, next: NextFunction) => 
 
 const updateRecipe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data = req.body;
 
     const existing = await prisma.recipe.findUnique({ where: { id } });
@@ -141,7 +141,7 @@ const updateRecipe = async (req: Request, res: Response, next: NextFunction) => 
 
 const deleteRecipe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const existing = await prisma.recipe.findUnique({ where: { id } });
     if (!existing) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Recipe not found");

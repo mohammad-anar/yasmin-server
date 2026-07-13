@@ -60,7 +60,7 @@ const getWorkoutLogs = async (req: Request, res: Response, next: NextFunction) =
 const updateWorkoutLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.workoutLog.findUnique({ where: { id } });
@@ -80,7 +80,7 @@ const updateWorkoutLog = async (req: Request, res: Response, next: NextFunction)
 const deleteWorkoutLog = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.workoutLog.findUnique({ where: { id } });
@@ -137,7 +137,7 @@ const getWorkoutSessions = async (req: Request, res: Response, next: NextFunctio
 const getWorkoutSessionById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const result = await prisma.workoutSession.findUnique({ where: { id } });
@@ -153,7 +153,7 @@ const getWorkoutSessionById = async (req: Request, res: Response, next: NextFunc
 const updateWorkoutSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.workoutSession.findUnique({ where: { id } });
@@ -186,7 +186,7 @@ const updateWorkoutSession = async (req: Request, res: Response, next: NextFunct
 const deleteWorkoutSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.workoutSession.findUnique({ where: { id } });
@@ -245,7 +245,7 @@ const getPersonalRecords = async (req: Request, res: Response, next: NextFunctio
 const updatePersonalRecord = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.personalRecord.findUnique({ where: { id } });
@@ -270,7 +270,7 @@ const updatePersonalRecord = async (req: Request, res: Response, next: NextFunct
 const deletePersonalRecord = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user;
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
     const record = await prisma.personalRecord.findUnique({ where: { id } });
@@ -325,7 +325,7 @@ const addWorkoutToLibrary = async (req: Request, res: Response, next: NextFuncti
 
 const deleteWorkoutFromLibrary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await prisma.workout.delete({ where: { id } });
     res.status(StatusCodes.OK).json({ success: true, message: "Workout deleted successfully" });
   } catch (error) {
@@ -335,7 +335,7 @@ const deleteWorkoutFromLibrary = async (req: Request, res: Response, next: NextF
 
 const updateWorkoutInLibrary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data = req.body;
 
     const existingWorkout = await prisma.workout.findUnique({ where: { id } });
@@ -376,7 +376,7 @@ const getSavedWorkouts = async (req: Request, res: Response, next: NextFunction)
       include: { workout: true }
     });
 
-    res.status(StatusCodes.OK).json(saved.map(s => s.workout));
+    res.status(StatusCodes.OK).json(saved.map((s: any) => s.workout));
   } catch (error) {
     next(error);
   }
@@ -419,7 +419,7 @@ const unsaveWorkout = async (req: Request, res: Response, next: NextFunction) =>
     const user = req.user;
     if (!user || !user.id) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
 
-    const { workoutId } = req.params;
+    const { workoutId } = req.params as Record<string, string>;
     if (!workoutId) throw new ApiError(StatusCodes.BAD_REQUEST, "Workout ID is required");
 
     await prisma.savedWorkout.delete({

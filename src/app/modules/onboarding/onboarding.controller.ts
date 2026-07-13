@@ -44,7 +44,7 @@ const createContraception = async (req: Request, res: Response, next: NextFuncti
 
 const deleteContraception = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await OnboardingService.deleteContraception(id);
     res.status(StatusCodes.OK).json({
       success: true,
@@ -71,7 +71,7 @@ const createContraceptionDetail = async (req: Request, res: Response, next: Next
 
 const deleteContraceptionDetail = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await OnboardingService.deleteContraceptionDetail(id);
     res.status(StatusCodes.OK).json({
       success: true,
@@ -98,7 +98,7 @@ const createGoal = async (req: Request, res: Response, next: NextFunction) => {
 
 const deleteGoal = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await OnboardingService.deleteGoal(id);
     res.status(StatusCodes.OK).json({
       success: true,
@@ -125,7 +125,7 @@ const createSymptom = async (req: Request, res: Response, next: NextFunction) =>
 
 const deleteSymptom = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await OnboardingService.deleteSymptom(id);
     res.status(StatusCodes.OK).json({
       success: true,
@@ -152,7 +152,7 @@ const createDailyCheckIn = async (req: Request, res: Response, next: NextFunctio
 
 const deleteDailyCheckIn = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     await OnboardingService.deleteDailyCheckIn(id);
     res.status(StatusCodes.OK).json({
       success: true,
