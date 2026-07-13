@@ -144,6 +144,67 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
       });
     }
 
+    // StoreKit 2 / Decrypted local transaction JSON handler
+    let isStoreKit2 = false;
+    let transactionObj: any = null;
+
+    if (typeof receiptData === "object") {
+      transactionObj = receiptData;
+      isStoreKit2 = true;
+    } else if (typeof receiptData === "string" && receiptData.trim().startsWith("{")) {
+      try {
+        transactionObj = JSON.parse(receiptData);
+        isStoreKit2 = true;
+      } catch (_) {}
+    }
+
+    if (isStoreKit2 && transactionObj) {
+      const prodId = transactionObj.productId || "";
+      const expiresDateMs = parseInt(transactionObj.expiresDate || "0");
+      const transactionId = transactionObj.transactionId || "";
+      const now = Date.now();
+
+      const isPremium = expiresDateMs > now || expiresDateMs === 0;
+
+      if (isPremium) {
+        const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
+        let subType = "monthly";
+        if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) subType = "yearly";
+        else if (prodId.toLowerCase().includes("weekly")) subType = "weekly";
+
+        const endMs = expiresDateMs > 0 ? expiresDateMs : Date.now() + 30 * 24 * 3600 * 1000;
+        const sub = await prisma.subscription.upsert({
+          where: { userId: dbUser.id },
+          create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(endMs), token: transactionId || "storekit2_sandbox" },
+          update: { type: subType, endDate: new Date(endMs), token: transactionId || "storekit2_sandbox" },
+        });
+
+        // Emit socket notification
+        emitToAdmins("subscription_created", {
+          subscription: sub,
+          user: {
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            avatarUrl: dbUser.avatarUrl,
+          },
+        });
+
+        return res.status(StatusCodes.OK).json({
+          valid: true,
+          isPremium: true,
+          expiresDate: new Date(endMs).toISOString(),
+          productId: prodId
+        });
+      } else {
+        return res.status(StatusCodes.OK).json({
+          valid: false,
+          isPremium: false,
+          error: "Subscription has expired"
+        });
+      }
+    }
+
     const bundleId = process.env.APPLE_BUNDLE_ID;
     let result = await verifyWithApple(receiptData, APPLE_VERIFY_URL_PROD);
     if (result.status === 21007) result = await verifyWithApple(receiptData, APPLE_VERIFY_URL_SANDBOX);
