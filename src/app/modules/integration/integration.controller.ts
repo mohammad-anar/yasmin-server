@@ -160,7 +160,9 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
 
     if (isStoreKit2 && transactionObj) {
       const prodId = transactionObj.productId || "";
-      const expiresDateMs = parseInt(transactionObj.expiresDate || "0");
+      const expiresDateMs = typeof transactionObj.expiresDate === "number"
+        ? transactionObj.expiresDate
+        : parseInt(String(transactionObj.expiresDate || "0"));
       const transactionId = transactionObj.transactionId || "";
       const now = Date.now();
 
