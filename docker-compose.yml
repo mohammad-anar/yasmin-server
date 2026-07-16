@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: yasmin-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-herwellness}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-herwellness}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: yasmin-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yasmin-app
+    restart: always
+    ports:
+      - "${PORT:-5000}:${PORT:-5000}"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-herwellness}?schema=public
+      - DIRECT_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-herwellness}?schema=public
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    command: >
+      sh -c "npx prisma migrate deploy && npm run start"
+
+volumes:
+  pgdata:
+  redisdata:

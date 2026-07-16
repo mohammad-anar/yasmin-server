@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
 
 # Generate Prisma Client
-RUN DATABASE_URL="postgresql://postgres:123456@db:5432/fantasy_ufc?schema=public" npx prisma generate
+RUN DATABASE_URL="postgresql://postgres:123456@db:5432/herwellness?schema=public" npx prisma generate
 
 # Build the application
 RUN npm run build
@@ -27,4 +27,4 @@ RUN npm run build
 EXPOSE 5000
 
 # Start the application
-CMD ["pnpm", "run", "start:prod"]
+CMD ["npm", "run", "start"]
