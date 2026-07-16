@@ -47,7 +47,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     command: >
-      sh -c "npx prisma migrate deploy && npm run start"
+      sh -c "npx prisma db push && npm run start"
 
 volumes:
   pgdata:
