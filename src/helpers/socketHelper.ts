@@ -15,7 +15,22 @@ const socketMap: Map<string, Set<string>> = new Map();
 export const initSocket = (server: any) => {
   io = new Server(server, {
     pingTimeout: 60000,
-    cors: { origin: "*" },
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:") ||
+          origin.endsWith(".herwellness.app") ||
+          origin === "https://herwellness.app"
+        ) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      credentials: true,
+    },
   });
 
   io.on("connection", (socket: Socket) => {
