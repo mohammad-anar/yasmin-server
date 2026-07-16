@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { Secret } from "jsonwebtoken";
 import { emailHelper } from "../../../helpers/emailHelper.js";
 import { emailTemplate } from "../../shared/emailTemplate.js";
+import { formatAvatarUrl } from "../../../helpers/fileHelper.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const JWT_SECRET = config.jwt.jwt_secret as Secret;
@@ -21,7 +22,7 @@ const makeTokenPair = (payload: { id: string; email: string; role: string }) => 
   return { access_token, refresh_token };
 };
 
-const formatUserResponse = async (user: any) => {
+const formatUserResponse = async (user: any, req?: Request) => {
   const subscription = user.subscription || await prisma.subscription.findUnique({
     where: { userId: user.id }
   });
@@ -42,6 +43,7 @@ const formatUserResponse = async (user: any) => {
 
   return {
     ...userRest,
+    avatarUrl: formatAvatarUrl(userRest.avatarUrl, req),
     role: userRest.role.toLowerCase(),
     subscription: subscription ? {
       id: subscription.id,
@@ -106,7 +108,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     // Return tokens immediately so app can proceed even if email fails
     const payload = { id: newUser.id, email: newUser.email!, role: newUser.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
-    const userWithSub = await formatUserResponse(newUser);
+    const userWithSub = await formatUserResponse(newUser, req);
 
     res.status(StatusCodes.CREATED).json({
       access_token,
@@ -151,7 +153,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     const payload = { id: user.id, email: user.email!, role: user.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
 
-    const userWithSub = await formatUserResponse(user);
+    const userWithSub = await formatUserResponse(user, req);
 
     res.status(StatusCodes.OK).json({
       access_token,
@@ -204,7 +206,7 @@ const me = async (req: Request, res: Response, next: NextFunction) => {
     });
     if (!dbUser) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
-    const userWithSub = await formatUserResponse(dbUser);
+    const userWithSub = await formatUserResponse(dbUser, req);
     res.status(StatusCodes.OK).json(userWithSub);
   } catch (error) {
     next(error);
@@ -235,7 +237,7 @@ const updateMe = async (req: Request, res: Response, next: NextFunction) => {
       data,
       include: { subscription: true }
     });
-    const userWithSub = await formatUserResponse(updated);
+    const userWithSub = await formatUserResponse(updated, req);
     res.status(StatusCodes.OK).json(userWithSub);
   } catch (error) {
     next(error);
@@ -344,7 +346,11 @@ const adminListUsers = async (req: Request, res: Response, next: NextFunction) =
       prisma.user.count({ where })
     ]);
 
-    const result = users.map((u: any) => ({ ...u, role: u.role.toLowerCase() }));
+    const result = users.map((u: any) => ({
+      ...u,
+      avatarUrl: formatAvatarUrl(u.avatarUrl, req),
+      role: u.role.toLowerCase()
+    }));
 
     res.status(StatusCodes.OK).json({
       data: result,
@@ -375,7 +381,11 @@ const adminGetUser = async (req: Request, res: Response, next: NextFunction) => 
 
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
-    res.status(StatusCodes.OK).json({ ...user, role: user.role.toLowerCase() });
+    res.status(StatusCodes.OK).json({ 
+      ...user, 
+      avatarUrl: formatAvatarUrl(user.avatarUrl, req),
+      role: user.role.toLowerCase() 
+    });
   } catch (error) {
     next(error);
   }
@@ -536,7 +546,7 @@ const verifySignupOtp = async (req: Request, res: Response, next: NextFunction) 
     if (user.isVerified && !user.otpCode) {
       const payload = { id: user.id, email: user.email!, role: user.role.toLowerCase() };
       const { access_token, refresh_token } = makeTokenPair(payload);
-      const userWithSub = await formatUserResponse(user);
+      const userWithSub = await formatUserResponse(user, req);
       return res.status(StatusCodes.OK).json({ access_token, refresh_token, user: userWithSub });
     }
 
@@ -561,7 +571,7 @@ const verifySignupOtp = async (req: Request, res: Response, next: NextFunction) 
 
     const payload = { id: verified.id, email: verified.email!, role: verified.role.toLowerCase() };
     const { access_token, refresh_token } = makeTokenPair(payload);
-    const userWithSub = await formatUserResponse(verified);
+    const userWithSub = await formatUserResponse(verified, req);
 
     res.status(StatusCodes.OK).json({
       access_token,

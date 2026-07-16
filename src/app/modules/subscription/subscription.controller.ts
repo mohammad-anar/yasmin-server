@@ -3,6 +3,7 @@ import { prisma } from "../../../helpers/prisma.js";
 import ApiError from "../../../errors/ApiError.js";
 import { StatusCodes } from "http-status-codes";
 import { emitToAdmins } from "../../../helpers/socketHelper.js";
+import { formatAvatarUrl } from "../../../helpers/fileHelper.js";
 
 const getMySubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -97,8 +98,15 @@ const adminListSubscriptions = async (req: Request, res: Response, next: NextFun
       prisma.subscription.count({ where })
     ]);
 
+    const formattedSubscriptions = subscriptions.map((sub: any) => {
+      if (sub.user) {
+        sub.user.avatarUrl = formatAvatarUrl(sub.user.avatarUrl, req);
+      }
+      return sub;
+    });
+
     res.status(StatusCodes.OK).json({
-      data: subscriptions,
+      data: formattedSubscriptions,
       meta: { total, page: parseInt(page), limit: take, totalPages: Math.ceil(total / take) }
     });
   } catch (error) {
