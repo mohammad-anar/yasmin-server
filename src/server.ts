@@ -39,7 +39,7 @@ async function bootstrap() {
 
       console.log(`🚀 Server running on port ${config.port}`);
       console.log(`🔗 Local: http://localhost:${config.port}`);
-      console.log(`🔗 Network: http://10.10.7.111:${config.port}`);
+      console.log(`🔗 Network: http://localhost:${config.port}`);
     });
   } catch (error) {
     console.error("Error during server startup:", error);
