@@ -39,6 +39,7 @@ router.delete("/comments/:id", auth(), subscriptionGuard, CommunityController.de
 router.post("/reports", optionalAuth, CommunityController.createReport);
 router.get("/reports", auth("ADMIN"), subscriptionGuard, CommunityController.getReports);
 router.put("/reports/:id", auth("ADMIN"), subscriptionGuard, CommunityController.updateReport);
+router.delete("/reports/:id", auth("ADMIN"), subscriptionGuard, CommunityController.deleteReportedContent);
 
 export const CommunityRoutes = router;
 

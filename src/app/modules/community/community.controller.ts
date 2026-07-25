@@ -212,10 +212,37 @@ const getReports = async (req: Request, res: Response, next: NextFunction) => {
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }
 
-    const result = await prisma.reportedPost.findMany({
+    const reports = await prisma.reportedPost.findMany({
       orderBy: { createdAt: "desc" }
     });
-    res.status(StatusCodes.OK).json(result);
+
+    // Populate actual post/comment data if exists
+    const enrichedReports = await Promise.all(
+      reports.map(async (report) => {
+        let postData = null;
+        let commentData = null;
+
+        if (report.post_id) {
+          postData = await prisma.communityPost.findUnique({
+            where: { id: report.post_id }
+          });
+        }
+
+        if (report.comment_id) {
+          commentData = await prisma.postComment.findUnique({
+            where: { id: report.comment_id }
+          });
+        }
+
+        return {
+          ...report,
+          post: postData,
+          comment: commentData,
+        };
+      })
+    );
+
+    res.status(StatusCodes.OK).json(enrichedReports);
   } catch (error) {
     next(error);
   }
@@ -239,6 +266,41 @@ const updateReport = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
+// Admin action to delete the reported post/comment and resolve report
+const deleteReportedContent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = req.user;
+    const { id } = req.params as Record<string, string>; // report ID
+    if (!user || user.role?.toLowerCase() !== "admin") {
+      throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
+    }
+
+    const report = await prisma.reportedPost.findUnique({ where: { id } });
+    if (!report) throw new ApiError(StatusCodes.NOT_FOUND, "Report not found");
+
+    // Remove actual content
+    if (report.content_type === "post" && report.post_id) {
+      await prisma.communityPost.deleteMany({ where: { id: report.post_id } });
+    } else if (report.content_type === "comment" && report.comment_id) {
+      await prisma.postComment.deleteMany({ where: { id: report.comment_id } });
+    }
+
+    // Mark report as actioned/removed
+    const updatedReport = await prisma.reportedPost.update({
+      where: { id },
+      data: { status: "removed" }
+    });
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Reported content removed successfully",
+      report: updatedReport
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const CommunityController = {
   createPost,
   getPosts,
@@ -250,5 +312,6 @@ export const CommunityController = {
   deleteComment,
   createReport,
   getReports,
-  updateReport
+  updateReport,
+  deleteReportedContent,
 };
