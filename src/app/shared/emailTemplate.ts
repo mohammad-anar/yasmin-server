@@ -1,7 +1,7 @@
 import config from "../../config/index.js";
 import { IContactEmail, ICreateAccount, IResetPassword } from "../../types/emailTamplate.js";
 
-const PRIMARY_COLOR = "#00C6CF";
+const PRIMARY_COLOR = "#5A4D42";
 
 const baseTemplate = (content: string) => `
 <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
@@ -16,7 +16,7 @@ const baseTemplate = (content: string) => `
           <tr>
             <td align="center" style="padding-bottom:20px;">
               <h1 style="margin:0; font-size:22px; color:${PRIMARY_COLOR}; font-weight:700;">
-                Fantasy MMA
+                HerWellness
               </h1>
             </td>
           </tr>
@@ -42,7 +42,7 @@ const baseTemplate = (content: string) => `
               <p style="font-size:13px; color:#888888; line-height:1.6; margin:0;">
                 If you have any questions, contact our support team.
               </p>
-                © ${new Date().getFullYear()} Fantasy MMA. All rights reserved.
+                © ${new Date().getFullYear()} HerWellness. All rights reserved.
               </p>
             </td>
           </tr>
@@ -64,7 +64,7 @@ const createAccount = (values: ICreateAccount) => {
     </h2>
 
     <p style="font-size:15px; line-height:1.7; color:#555; margin-bottom:25px;">
-      Thank you for creating an account with Fantasy MMA.
+      Thank you for creating an account with HerWellness.
       Please use the verification code below to activate your account.
     </p>
 
@@ -83,7 +83,7 @@ const createAccount = (values: ICreateAccount) => {
     </div>
 
     <p style="font-size:14px; color:#777; margin-top:10px;">
-      This code is valid for <strong>5 minutes</strong>.
+      This code is valid for <strong>10 minutes</strong>.
     </p>
 
     <p style="font-size:13px; color:#999; margin-top:25px;">
@@ -93,7 +93,7 @@ const createAccount = (values: ICreateAccount) => {
 
   return {
     to: values.email,
-    subject: "Verify your Fantasy MMA account",
+    subject: "Verify your HerWellness account",
     html: baseTemplate(content),
   };
 };
@@ -126,7 +126,7 @@ const resetPassword = (values: IResetPassword) => {
     </div>
 
     <p style="font-size:14px; color:#777;">
-      This code expires in <strong>3 minutes</strong>.
+      This code expires in <strong>10 minutes</strong>.
     </p>
 
     <p style="font-size:13px; color:#999; margin-top:25px;">
@@ -136,7 +136,7 @@ const resetPassword = (values: IResetPassword) => {
 
   return {
     to: values.email,
-    subject: "Reset your Fantasy MMA password",
+    subject: "Reset your HerWellness password",
     html: baseTemplate(content),
   };
 };
@@ -208,7 +208,7 @@ const contactEmail = (values: IContactEmail) => {
     </div>
 
     <p style="font-size:13px; color:#999; margin-top:25px;">
-      This message was sent via the contact form on Fantasy MMA.
+      This message was sent via the contact form on HerWellness.
     </p>
   `;
 

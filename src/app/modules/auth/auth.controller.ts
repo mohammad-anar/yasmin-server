@@ -9,6 +9,7 @@ import { Secret } from "jsonwebtoken";
 import { emailHelper } from "../../../helpers/emailHelper.js";
 import { emailTemplate } from "../../shared/emailTemplate.js";
 import { formatAvatarUrl } from "../../../helpers/fileHelper.js";
+import generateOTP from "../../../helpers/generateOTP.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const JWT_SECRET = config.jwt.jwt_secret as Secret;
@@ -83,7 +84,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const passwordHash = await bcrypt.hash(password, Number(config.bcrypt_salt_round || 10));
 
     // Generate 4-digit OTP for email verification
-    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpCode = generateOTP().toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const newUser = await prisma.user.create({
@@ -505,7 +506,7 @@ const forgotPassword = async (req: Request, res: Response, next: NextFunction) =
       throw new ApiError(StatusCodes.NOT_FOUND, "User not found with this email");
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = generateOTP().toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
     // Save to database
