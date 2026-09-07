@@ -31,4 +31,13 @@ export default {
     password: process.env.PASSWORD,
     avatar: process.env.AVATAR,
   },
+  google_play: {
+    package_name: process.env.ANDROID_PACKAGE_NAME || "com.herwellness.herwellness_flutter",
+    credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS || "./service-account-key.json",
+    webhook_secret_key: process.env.WEBHOOK_SECRET_KEY,
+    pubsub_topic: process.env.GOOGLE_PUBSUB_TOPIC,
+    public_key: process.env.GOOGLE_PLAY_PUBLIC_KEY,
+  },
 };
+
+
