@@ -47,7 +47,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     command: >
-      sh -c "npx prisma db push && npm run start"
+      sh -c "npx prisma db push --accept-data-loss && npm run start"
+
 
 volumes:
   pgdata:

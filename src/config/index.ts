@@ -32,12 +32,15 @@ export default {
     avatar: process.env.AVATAR,
   },
   google_play: {
-    package_name: process.env.ANDROID_PACKAGE_NAME || "com.herwellness.herwellness_flutter",
+    package_name: process.env.ANDROID_PACKAGE_NAME || "com.herwellnessapp",
     credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS || "./service-account-key.json",
+    service_account_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    service_account_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
     webhook_secret_key: process.env.WEBHOOK_SECRET_KEY,
     pubsub_topic: process.env.GOOGLE_PUBSUB_TOPIC,
     public_key: process.env.GOOGLE_PLAY_PUBLIC_KEY,
   },
 };
+
 
 
