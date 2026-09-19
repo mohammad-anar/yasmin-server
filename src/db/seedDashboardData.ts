@@ -1,4 +1,5 @@
 import { prisma } from "../helpers/prisma.js";
+import { syncUserRoles } from "./syncUserRoles.js";
 
 export const seedDashboardData = async () => {
   try {
@@ -79,17 +80,13 @@ export const seedDashboardData = async () => {
             }
           });
 
-          // Update user role to PREMIUM if subscription is active
-          if (!isExpired) {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { role: "PREMIUM" }
-            });
-          }
           console.log(`[Dashboard Seed] Seeded mock ${type} Subscription for ${user.email} (Active: ${!isExpired})`);
         }
       }
     }
+
+    // Always synchronize all user roles with active subscriptions
+    await syncUserRoles();
   } catch (error) {
     console.error("[Dashboard Seed] Error seeding mock dashboard data:", error);
   }

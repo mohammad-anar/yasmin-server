@@ -8,6 +8,7 @@ import { seedPhaseGuides } from "./db/seedPhaseGuides.js";
 import { seedDashboardData } from "./db/seedDashboardData.js";
 import { initSocket } from "./helpers/socketHelper.js";
 import { initFirebase } from "./helpers/firebaseHelper.js";
+import { initCronJobs } from "./helpers/cronHelper.js";
 
 let server: any;
 
@@ -26,6 +27,8 @@ async function bootstrap() {
     await seedPhaseGuides();
     await seedDashboardData();
 
+    // Initialize scheduled hourly cron jobs
+    initCronJobs();
 
     server = app.listen(Number(config.port), "0.0.0.0", () => {
       // Initialize Socket.io

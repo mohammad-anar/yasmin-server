@@ -12,6 +12,8 @@
   "scripts": {
     "dev": "tsx watch ./src/server.ts",
     "start": "tsx ./src/server.ts",
+    "sync-roles": "tsx src/db/syncUserRoles.ts",
+    "clean:weekly-subs": "tsx src/db/removeWeeklySubscriptions.ts",
     "build": "tsc",
     "postinstall": "prisma generate",
     "start:prod": "node dist/server.js"

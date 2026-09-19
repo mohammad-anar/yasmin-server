@@ -319,6 +319,7 @@ const adminListUsers = async (req: Request, res: Response, next: NextFunction) =
     if (isBlocked !== undefined) where.isBlocked = isBlocked === "true";
     if (includeDeleted !== "true") where.deletedAt = null;
 
+    const now = new Date();
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -340,18 +341,30 @@ const adminListUsers = async (req: Request, res: Response, next: NextFunction) =
           platform: true,
           language: true,
           subscription: {
-            select: { type: true, endDate: true }
+            select: { type: true, endDate: true, subscriptionState: true }
           }
         }
       }),
       prisma.user.count({ where })
     ]);
 
-    const result = users.map((u: any) => ({
-      ...u,
-      avatarUrl: formatAvatarUrl(u.avatarUrl, req),
-      role: u.role.toLowerCase()
-    }));
+    const result = users.map((u: any) => {
+      let effectiveRole = u.role ? u.role.toLowerCase() : "user";
+      if (effectiveRole !== "admin") {
+        const isSubActive =
+          !!u.subscription &&
+          new Date(u.subscription.endDate) > now &&
+          u.subscription.subscriptionState !== "EXPIRED" &&
+          u.subscription.subscriptionState !== "REVOKED";
+        effectiveRole = isSubActive ? "premium" : "user";
+      }
+
+      return {
+        ...u,
+        avatarUrl: formatAvatarUrl(u.avatarUrl, req),
+        role: effectiveRole
+      };
+    });
 
     res.status(StatusCodes.OK).json({
       data: result,
@@ -382,10 +395,21 @@ const adminGetUser = async (req: Request, res: Response, next: NextFunction) => 
 
     if (!user) throw new ApiError(StatusCodes.NOT_FOUND, "User not found");
 
+    const now = new Date();
+    let effectiveRole = user.role ? user.role.toLowerCase() : "user";
+    if (effectiveRole !== "admin") {
+      const isSubActive =
+        !!user.subscription &&
+        new Date(user.subscription.endDate) > now &&
+        (user.subscription as any).subscriptionState !== "EXPIRED" &&
+        (user.subscription as any).subscriptionState !== "REVOKED";
+      effectiveRole = isSubActive ? "premium" : "user";
+    }
+
     res.status(StatusCodes.OK).json({ 
       ...user, 
       avatarUrl: formatAvatarUrl(user.avatarUrl, req),
-      role: user.role.toLowerCase() 
+      role: effectiveRole 
     });
   } catch (error) {
     next(error);
@@ -456,12 +480,22 @@ const adminStats = async (req: Request, res: Response, next: NextFunction) => {
       throw new ApiError(StatusCodes.FORBIDDEN, "Admin access required");
     }
 
-    const [totalUsers, premiumUsers, blockedUsers, deletedUsers, activeSubscriptions] = await Promise.all([
+    const now = new Date();
+    const [totalUsers, blockedUsers, deletedUsers, activeSubscriptions, premiumUsers] = await Promise.all([
       prisma.user.count({ where: { deletedAt: null } }),
-      prisma.user.count({ where: { role: "PREMIUM", deletedAt: null } }),
       prisma.user.count({ where: { isBlocked: true, deletedAt: null } }),
       prisma.user.count({ where: { deletedAt: { not: null } } }),
-      prisma.subscription.count({ where: { endDate: { gte: new Date() } } }),
+      prisma.subscription.count({ where: { endDate: { gte: now } } }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: { not: "ADMIN" },
+          OR: [
+            { role: "PREMIUM" },
+            { subscription: { endDate: { gte: now } } }
+          ]
+        }
+      }),
     ]);
 
     // Last 30 days registrations by day

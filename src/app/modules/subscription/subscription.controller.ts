@@ -396,9 +396,17 @@ const adminListSubscriptions = async (req: Request, res: Response, next: NextFun
       prisma.subscription.count({ where }),
     ]);
 
+    const now = new Date();
     const formattedSubscriptions = subscriptions.map((sub: any) => {
       if (sub.user) {
         sub.user.avatarUrl = formatAvatarUrl(sub.user.avatarUrl, req);
+        if (sub.user.role !== "ADMIN") {
+          const isSubActive =
+            new Date(sub.endDate) > now &&
+            sub.subscriptionState !== "EXPIRED" &&
+            sub.subscriptionState !== "REVOKED";
+          sub.user.role = isSubActive ? "PREMIUM" : "USER";
+        }
       }
       return sub;
     });
