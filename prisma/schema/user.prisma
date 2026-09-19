@@ -74,7 +74,7 @@ model Subscription {
   purchaseToken     String?  @unique // Google Play purchase token
   orderId           String?  // Google Play order ID
   subscriptionState String   @default("ACTIVE") // "ACTIVE", "EXPIRED", "CANCELED", "PAUSED", "REVOKED", "IN_GRACE_PERIOD", "ON_HOLD"
-  type              String   @default("yearly") // "weekly", "monthly", "yearly"
+  type              String   @default("yearly") // "monthly", "yearly"
   startDate         DateTime @default(now())
   endDate           DateTime
   token             String?  // Receipt or transaction token (backward compatible)

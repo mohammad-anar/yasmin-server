@@ -12,8 +12,29 @@ export const getGooglePlayApi = (): androidpublisher_v3.Androidpublisher => {
 
   let auth: any;
 
-  // 1. Check if direct Service Account credentials exist in .env (recommended for Docker/Production)
-  if (config.google_play.service_account_email && config.google_play.service_account_key) {
+  // 1. Check if Base64 encoded Service Account JSON is provided
+  if (config.google_play.service_account_base64) {
+    try {
+      const decodedJson = Buffer.from(
+        config.google_play.service_account_base64.trim(),
+        "base64"
+      ).toString("utf-8");
+      const credentials = JSON.parse(decodedJson);
+
+      auth = new google.auth.GoogleAuth({
+        credentials,
+        scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+      });
+    } catch (err: any) {
+      console.error(
+        "Failed to initialize Google Auth from GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64:",
+        err?.message || err
+      );
+    }
+  }
+
+  // 2. Check if direct Service Account credentials exist in .env
+  if (!auth && config.google_play.service_account_email && config.google_play.service_account_key) {
     const formattedPrivateKey = config.google_play.service_account_key
       .replace(/\\n/g, "\n")
       .replace(/^"|"$/g, ""); // strip surrounding quotes if any
@@ -25,15 +46,21 @@ export const getGooglePlayApi = (): androidpublisher_v3.Androidpublisher => {
       },
       scopes: ["https://www.googleapis.com/auth/androidpublisher"],
     });
-  } else {
-    // 2. Fallback to service-account-key.json file path
-    const credentialsPath = path.isAbsolute(config.google_play.credentials_path)
-      ? config.google_play.credentials_path
-      : path.join(process.cwd(), config.google_play.credentials_path);
+  }
+
+  // 3. Fallback to service-account-key.json file path
+  if (!auth) {
+    const filePath =
+      config.google_play.service_account_path ||
+      config.google_play.credentials_path ||
+      "./service-account-key.json";
+    const credentialsPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(process.cwd(), filePath);
 
     if (!fs.existsSync(credentialsPath)) {
       throw new Error(
-        `Google Service Account credentials not found. Either provide GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_KEY in .env, or place service-account-key.json at ${credentialsPath}`
+        `Google Service Account credentials not found. Provide GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64, GOOGLE_PLAY_SERVICE_ACCOUNT_PATH, or place service-account-key.json at ${credentialsPath}`
       );
     }
 
@@ -49,4 +76,40 @@ export const getGooglePlayApi = (): androidpublisher_v3.Androidpublisher => {
   });
 
   return playDeveloperApi;
+};
+
+/**
+ * Check if the product ID is the VIP / Annual subscription product
+ */
+export const isVipProduct = (productId: string): boolean => {
+  if (!productId) return false;
+  return (
+    productId === config.google_play.vip_product_id ||
+    productId.toLowerCase().includes("annual") ||
+    productId.toLowerCase().includes("yearly") ||
+    productId.toLowerCase().includes("year")
+  );
+};
+
+/**
+ * Check if the product ID is the Regular / Monthly subscription product
+ */
+export const isRegularProduct = (productId: string): boolean => {
+  if (!productId) return false;
+  return (
+    productId === config.google_play.regular_product_id ||
+    productId.toLowerCase().includes("monthly") ||
+    productId.toLowerCase().includes("regular")
+  );
+};
+
+export const getGooglePlayPackageName = (): string => {
+  return config.google_play.package_name;
+};
+
+export const getGooglePlayProductIds = () => {
+  return {
+    regular: config.google_play.regular_product_id,
+    vip: config.google_play.vip_product_id,
+  };
 };

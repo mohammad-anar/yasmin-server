@@ -4,8 +4,12 @@ import { prisma } from "../../../helpers/prisma.js";
 import config from "../../../config/index.js";
 import ApiError from "../../../errors/ApiError.js";
 import { StatusCodes } from "http-status-codes";
-import { google } from "googleapis";
 import { emitToAdmins } from "../../../helpers/socketHelper.js";
+import {
+  getGooglePlayApi,
+  isVipProduct,
+  isRegularProduct,
+} from "../subscription/googlePlay.service.js";
 
 const APPLE_VERIFY_URL_PROD = "https://buy.itunes.apple.com/verifyReceipt";
 const APPLE_VERIFY_URL_SANDBOX = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -26,39 +30,74 @@ async function verifyWithApple(receiptData: string, url: string) {
 
 // Google Play Store Verification helper
 async function verifyWithGoogle(packageName: string, productId: string, token: string) {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-
-  if (!email || !key || email.includes("your_") || key.includes("your_") || key.includes("-----BEGIN PRIVATE KEY-----\\\n...")) {
-    console.warn("Google service account credentials missing; assuming sandbox validation.");
-    return { valid: true, expiresDateMs: Date.now() + 30 * 24 * 60 * 60 * 1000, productId };
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: { client_email: email, private_key: key.replace(/\\\\n/g, "\n") },
-    scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-  });
-  const play = google.androidpublisher({ version: "v3", auth });
+  const pkg = packageName || config.google_play.package_name || "com.herwellnessapp";
 
   try {
-    const res = await play.purchases.subscriptions.get({ packageName, subscriptionId: productId, token });
-    if (res.data) {
-      const active = parseInt(res.data.expiryTimeMillis || "0") > Date.now();
-      return { valid: active, expiresDateMs: parseInt(res.data.expiryTimeMillis || "0"), productId };
-    }
-  } catch {
+    const play = getGooglePlayApi();
+
+    // 1. Try modern subscriptionsv2 API
     try {
-      const res = await play.purchases.products.get({ packageName, productId, token });
-      if (res.data) {
-        const purchased = res.data.purchaseState === 0;
-        return { valid: purchased, expiresDateMs: Date.now() + 365 * 24 * 60 * 60 * 1000, productId };
+      const v2Res = await play.purchases.subscriptionsv2.get({
+        packageName: pkg,
+        token: token,
+      });
+
+      if (v2Res.data) {
+        const state = v2Res.data.subscriptionState;
+        const lineItem = v2Res.data.lineItems && v2Res.data.lineItems[0];
+        const expiryTime = lineItem?.expiryTime;
+        const expiresDateMs = expiryTime
+          ? new Date(expiryTime).getTime()
+          : Date.now() + 30 * 24 * 60 * 60 * 1000;
+        const active =
+          state === "SUBSCRIPTION_STATE_ACTIVE" ||
+          state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
+
+        return { valid: active, expiresDateMs, productId };
       }
-    } catch (err: any) {
-      console.error("Google IAP verification failed:", err?.message);
-      throw new Error(`Google IAP verification failed: ${err?.message}`);
+    } catch (_) {
+      // Fallback to legacy subscriptions.get
     }
+
+    // 2. Legacy subscriptions.get API
+    try {
+      const res = await play.purchases.subscriptions.get({
+        packageName: pkg,
+        subscriptionId: productId,
+        token,
+      });
+      if (res.data) {
+        const active = parseInt(res.data.expiryTimeMillis || "0") > Date.now();
+        return {
+          valid: active,
+          expiresDateMs: parseInt(res.data.expiryTimeMillis || "0"),
+          productId,
+        };
+      }
+    } catch (_) {
+      // Fallback to one-time products.get
+    }
+
+    // 3. One-time in-app product check
+    const res = await play.purchases.products.get({
+      packageName: pkg,
+      productId,
+      token,
+    });
+    if (res.data) {
+      const purchased = res.data.purchaseState === 0;
+      return {
+        valid: purchased,
+        expiresDateMs: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        productId,
+      };
+    }
+  } catch (err: any) {
+    console.error("Google IAP verification failed:", err?.message || err);
+    throw new Error(`Google IAP verification failed: ${err?.message || err}`);
   }
-  return { valid: false };
+
+  return { valid: false, productId };
 }
 
 // Invoke Gemini AI Coach API helper
@@ -172,7 +211,6 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
         const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
         let subType = "monthly";
         if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) subType = "yearly";
-        else if (prodId.toLowerCase().includes("weekly")) subType = "weekly";
 
         const endMs = expiresDateMs > 0 ? expiresDateMs : Date.now() + 30 * 24 * 3600 * 1000;
         const sub = await prisma.subscription.upsert({
@@ -221,7 +259,6 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
       const prodId = active?.product_id || "";
       let subType = "monthly";
       if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) subType = "yearly";
-      else if (prodId.toLowerCase().includes("weekly")) subType = "weekly";
       const endMs = parseInt(active?.expires_date_ms || String(Date.now() + 30 * 24 * 3600 * 1000));
       const sub = await prisma.subscription.upsert({
         where: { userId: dbUser.id },
@@ -252,18 +289,37 @@ const verifyGoogleIAP = async (req: Request, res: Response, next: NextFunction) 
     if (!user || !user.email) throw new ApiError(StatusCodes.UNAUTHORIZED, "Unauthorized");
     const { packageName, productId, token } = req.body;
     if (!productId || !token) throw new ApiError(StatusCodes.BAD_REQUEST, "productId and token required");
-    const pkg = packageName || process.env.ANDROID_PACKAGE_NAME || "com.herwellness.app";
+    const pkg = packageName || config.google_play.package_name || "com.herwellnessapp";
     const result = await verifyWithGoogle(pkg, productId, token);
+    const isVip = isVipProduct(productId);
+    const isRegular = isRegularProduct(productId);
+
     if (result.valid) {
       const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
-      let subType = "monthly";
-      if (productId.toLowerCase().includes("annual") || productId.toLowerCase().includes("yearly") || productId.toLowerCase().includes("year")) subType = "yearly";
-      else if (productId.toLowerCase().includes("weekly")) subType = "weekly";
+      const subType = isVip ? "yearly" : "monthly";
       const endMs = result.expiresDateMs ? result.expiresDateMs : Date.now() + 30 * 24 * 3600 * 1000;
       const sub = await prisma.subscription.upsert({
         where: { userId: dbUser.id },
-        create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(endMs), token },
-        update: { type: subType, endDate: new Date(endMs), token },
+        create: {
+          userId: dbUser.id,
+          platform: "android",
+          productId,
+          purchaseToken: token,
+          subscriptionState: "ACTIVE",
+          type: subType,
+          startDate: new Date(),
+          endDate: new Date(endMs),
+          token,
+        },
+        update: {
+          platform: "android",
+          productId,
+          purchaseToken: token,
+          subscriptionState: "ACTIVE",
+          type: subType,
+          endDate: new Date(endMs),
+          token,
+        },
       });
 
       // Emit socket notification
@@ -277,7 +333,12 @@ const verifyGoogleIAP = async (req: Request, res: Response, next: NextFunction) 
         },
       });
     }
-    res.status(StatusCodes.OK).json({ valid: result.valid, expiresDate: result.expiresDateMs ? new Date(result.expiresDateMs).toISOString() : null, productId: result.productId });
+    res.status(StatusCodes.OK).json({
+      valid: result.valid,
+      expiresDate: result.expiresDateMs ? new Date(result.expiresDateMs).toISOString() : null,
+      productId: result.productId,
+      tier: isVip ? "VIP" : isRegular ? "REGULAR" : "STANDARD",
+    });
   } catch (err) {
     next(err);
   }

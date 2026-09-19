@@ -32,8 +32,23 @@ export default {
     avatar: process.env.AVATAR,
   },
   google_play: {
-    package_name: process.env.ANDROID_PACKAGE_NAME || "com.herwellnessapp",
-    credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS || "./service-account-key.json",
+    package_name:
+      process.env.GOOGLE_PLAY_PACKAGE_NAME ||
+      process.env.ANDROID_PACKAGE_NAME ||
+      "com.herwellnessapp",
+    service_account_path:
+      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_PATH ||
+      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+      "./service-account-key.json",
+    service_account_base64: process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_BASE64,
+    regular_product_id:
+      process.env.GOOGLE_PLAY_REGULAR_PRODUCT_ID || "com.herwellnessapp.monthly",
+    vip_product_id:
+      process.env.GOOGLE_PLAY_VIP_PRODUCT_ID || "com.herwellnessapp.annual",
+    credentials_path:
+      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_PATH ||
+      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+      "./service-account-key.json",
     service_account_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     service_account_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
     webhook_secret_key: process.env.WEBHOOK_SECRET_KEY,

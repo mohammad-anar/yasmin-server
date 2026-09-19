@@ -4,7 +4,11 @@ import ApiError from "../../../errors/ApiError.js";
 import { StatusCodes } from "http-status-codes";
 import { emitToAdmins } from "../../../helpers/socketHelper.js";
 import { formatAvatarUrl } from "../../../helpers/fileHelper.js";
-import { getGooglePlayApi } from "./googlePlay.service.js";
+import {
+  getGooglePlayApi,
+  isVipProduct,
+  isRegularProduct,
+} from "./googlePlay.service.js";
 import config from "../../../config/index.js";
 
 // ─── 1. Get Current User Subscription ─────────────────────────────────────────
@@ -78,11 +82,9 @@ const verifySubscription = async (req: Request, res: Response, next: NextFunctio
       const orderId = subData.latestOrderId || (subData as any).orderId || null;
 
       const endDate = expiryTime ? new Date(expiryTime) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      const subType = productId.toLowerCase().includes("year")
-        ? "yearly"
-        : productId.toLowerCase().includes("week")
-        ? "weekly"
-        : "monthly";
+      const isVip = isVipProduct(productId);
+      const isRegular = isRegularProduct(productId);
+      const subType = isVip ? "yearly" : "monthly";
 
       // Upsert Subscription in Database
       const updatedSub = await prisma.subscription.upsert({
@@ -135,6 +137,8 @@ const verifySubscription = async (req: Request, res: Response, next: NextFunctio
           subscriptionState,
           expiryTime: endDate,
           subscription: updatedSub,
+          tier: isVip ? "VIP" : isRegular ? "REGULAR" : "STANDARD",
+          productId,
         },
       });
     } else {
@@ -318,7 +322,7 @@ const adminGrantSubscription = async (req: Request, res: Response, next: NextFun
 
     const now = new Date();
     const endDate = new Date();
-    const days = durationDays || (type === "weekly" ? 7 : type === "monthly" ? 30 : 365);
+    const days = durationDays || (type === "monthly" ? 30 : 365);
     endDate.setDate(now.getDate() + days);
 
     const sub = await prisma.subscription.upsert({

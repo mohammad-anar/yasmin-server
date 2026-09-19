@@ -9,7 +9,7 @@ export const seedDashboardData = async () => {
     if (users.length === 0) return;
 
     // We want at least some premium users and active subscriptions
-    const plans = ["weekly", "monthly", "yearly"];
+    const plans = ["monthly", "yearly"];
     
     for (let i = 0; i < users.length; i++) {
       const user = users[i];
@@ -61,7 +61,7 @@ export const seedDashboardData = async () => {
           
           const endDate = new Date();
           // make half of them active and half expired
-          const durationDays = type === "weekly" ? 7 : type === "monthly" ? 30 : 365;
+          const durationDays = type === "monthly" ? 30 : 365;
           const isExpired = i % 4 === 0;
           if (isExpired) {
             endDate.setDate(startDate.getDate() - 1); // expired yesterday
