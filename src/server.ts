@@ -5,7 +5,6 @@ import { seedOnboardingOptions } from "./db/seedOnboarding.js";
 import { seedWorkouts } from "./db/seedWorkouts.js";
 import { seedNutrition } from "./db/seedNutrition.js";
 import { seedPhaseGuides } from "./db/seedPhaseGuides.js";
-import { seedDashboardData } from "./db/seedDashboardData.js";
 import { initSocket } from "./helpers/socketHelper.js";
 import { initFirebase } from "./helpers/firebaseHelper.js";
 import { initCronJobs } from "./helpers/cronHelper.js";
@@ -25,7 +24,6 @@ async function bootstrap() {
     await seedWorkouts();
     await seedNutrition();
     await seedPhaseGuides();
-    await seedDashboardData();
 
     // Initialize scheduled hourly cron jobs
     initCronJobs();
