@@ -108,6 +108,7 @@ const verifySubscription = async (req: Request, res: Response, next: NextFunctio
           orderId,
           subscriptionState: "ACTIVE",
           type: subType,
+          startDate: new Date(),
           endDate: endDate,
           token: purchaseToken,
         },

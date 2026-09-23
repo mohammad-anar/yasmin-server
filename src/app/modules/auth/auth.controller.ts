@@ -35,7 +35,10 @@ const formatUserResponse = async (user: any, req?: Request) => {
 
   let isSubscriptionActive = false;
   if (subscription) {
-    isSubscriptionActive = new Date(subscription.endDate) > now;
+    isSubscriptionActive =
+      new Date(subscription.endDate) > now &&
+      subscription.subscriptionState !== "EXPIRED" &&
+      subscription.subscriptionState !== "REVOKED";
   }
 
   const hasPremiumAccess = user.role?.toUpperCase() === 'ADMIN' || isTrialActive || isSubscriptionActive;
@@ -49,6 +52,10 @@ const formatUserResponse = async (user: any, req?: Request) => {
     subscription: subscription ? {
       id: subscription.id,
       type: subscription.type,
+      platform: subscription.platform,
+      productId: subscription.productId,
+      orderId: subscription.orderId,
+      subscriptionState: subscription.subscriptionState,
       startDate: subscription.startDate,
       endDate: subscription.endDate,
       isActive: isSubscriptionActive

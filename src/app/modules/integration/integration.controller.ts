@@ -158,11 +158,34 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
     if (receiptData === "mock_monthly_receipt" || receiptData === "mock_annual_receipt") {
       const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
       const subType = receiptData === "mock_monthly_receipt" ? "monthly" : "yearly";
+      const startDate = new Date();
       const durationMs = subType === "monthly" ? 30 * 24 * 3600 * 1000 : 365 * 24 * 3600 * 1000;
+      const endDate = new Date(startDate.getTime() + durationMs);
+      const prodId = subType === "monthly" ? "com.herwellnessapp.monthly" : "com.herwellnessapp.annual";
+
       const sub = await prisma.subscription.upsert({
         where: { userId: dbUser.id },
-        create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(Date.now() + durationMs), token: receiptData },
-        update: { type: subType, endDate: new Date(Date.now() + durationMs), token: receiptData },
+        create: {
+          userId: dbUser.id,
+          platform: "ios",
+          productId: prodId,
+          orderId: "mock_apple_order_" + Date.now(),
+          subscriptionState: "ACTIVE",
+          type: subType,
+          startDate,
+          endDate,
+          token: receiptData,
+        },
+        update: {
+          platform: "ios",
+          productId: prodId,
+          orderId: "mock_apple_order_" + Date.now(),
+          subscriptionState: "ACTIVE",
+          type: subType,
+          startDate,
+          endDate,
+          token: receiptData,
+        },
       });
 
       emitToAdmins("subscription_created", {
@@ -179,7 +202,7 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
         valid: true,
         isPremium: true,
         expiresDate: sub.endDate.toISOString(),
-        productId: subType === "monthly" ? "com.herwellnessapp.monthly" : "com.herwellnessapp.annual"
+        productId: prodId,
       });
     }
 
@@ -202,7 +225,10 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
       const expiresDateMs = typeof transactionObj.expiresDate === "number"
         ? transactionObj.expiresDate
         : parseInt(String(transactionObj.expiresDate || "0"));
-      const transactionId = transactionObj.transactionId || "";
+      const purchaseDateMs = typeof transactionObj.purchaseDate === "number"
+        ? transactionObj.purchaseDate
+        : parseInt(String(transactionObj.purchaseDate || "0"));
+      const transactionId = transactionObj.transactionId || transactionObj.originalTransactionId || "";
       const now = Date.now();
 
       const isPremium = expiresDateMs > now || expiresDateMs === 0;
@@ -210,13 +236,38 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
       if (isPremium) {
         const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
         let subType = "monthly";
-        if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) subType = "yearly";
+        if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) {
+          subType = "yearly";
+        }
 
-        const endMs = expiresDateMs > 0 ? expiresDateMs : Date.now() + 30 * 24 * 3600 * 1000;
+        const startDate = purchaseDateMs > 0 ? new Date(purchaseDateMs) : new Date();
+        const durationDays = subType === "yearly" ? 365 : 30;
+        const fallbackEndMs = startDate.getTime() + durationDays * 24 * 3600 * 1000;
+        const endDate = expiresDateMs > 0 ? new Date(expiresDateMs) : new Date(fallbackEndMs);
+
         const sub = await prisma.subscription.upsert({
           where: { userId: dbUser.id },
-          create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(endMs), token: transactionId || "storekit2_sandbox" },
-          update: { type: subType, endDate: new Date(endMs), token: transactionId || "storekit2_sandbox" },
+          create: {
+            userId: dbUser.id,
+            platform: "ios",
+            productId: prodId,
+            orderId: String(transactionId),
+            subscriptionState: "ACTIVE",
+            type: subType,
+            startDate,
+            endDate,
+            token: String(transactionId) || "storekit2_sandbox",
+          },
+          update: {
+            platform: "ios",
+            productId: prodId,
+            orderId: String(transactionId),
+            subscriptionState: "ACTIVE",
+            type: subType,
+            startDate,
+            endDate,
+            token: String(transactionId) || "storekit2_sandbox",
+          },
         });
 
         // Emit socket notification
@@ -233,14 +284,14 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
         return res.status(StatusCodes.OK).json({
           valid: true,
           isPremium: true,
-          expiresDate: new Date(endMs).toISOString(),
-          productId: prodId
+          expiresDate: endDate.toISOString(),
+          productId: prodId,
         });
       } else {
         return res.status(StatusCodes.OK).json({
           valid: false,
           isPremium: false,
-          error: "Subscription has expired"
+          error: "Subscription has expired",
         });
       }
     }
@@ -250,20 +301,58 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
     if (result.status === 21007) result = await verifyWithApple(receiptData, APPLE_VERIFY_URL_SANDBOX);
     if (result.status !== 0) return res.status(StatusCodes.OK).json({ valid: false, status: result.status, error: "Receipt verification failed" });
     if (bundleId && result.receipt?.bundle_id !== bundleId) return res.status(StatusCodes.OK).json({ valid: false, error: "Bundle ID mismatch" });
+    
+    // Sort receipt transactions by expiration/purchase date descending to pick the latest active one
     const latest = result.latest_receipt_info || [];
+    const sorted = [...latest].sort((a: any, b: any) => {
+      const bTime = parseInt(b.expires_date_ms || b.purchase_date_ms || "0");
+      const aTime = parseInt(a.expires_date_ms || a.purchase_date_ms || "0");
+      return bTime - aTime;
+    });
+
     const now = Date.now();
-    const active = latest.find((r: any) => parseInt(r.expires_date_ms) > now);
-    const isPremium = !!active;
-    if (isPremium) {
+    const active = sorted.find((r: any) => parseInt(r.expires_date_ms || "0") > now) || sorted[0];
+    const isPremium = active && (parseInt(active.expires_date_ms || "0") > now || !active.expires_date_ms);
+
+    if (isPremium && active) {
       const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
       const prodId = active?.product_id || "";
       let subType = "monthly";
-      if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) subType = "yearly";
-      const endMs = parseInt(active?.expires_date_ms || String(Date.now() + 30 * 24 * 3600 * 1000));
+      if (prodId.toLowerCase().includes("annual") || prodId.toLowerCase().includes("yearly") || prodId.toLowerCase().includes("year")) {
+        subType = "yearly";
+      }
+
+      const purchaseDateMs = parseInt(active?.purchase_date_ms || active?.original_purchase_date_ms || String(Date.now()));
+      const startDate = new Date(purchaseDateMs);
+      const expiresDateMs = parseInt(active?.expires_date_ms || "0");
+      const durationDays = subType === "yearly" ? 365 : 30;
+      const fallbackEndMs = startDate.getTime() + durationDays * 24 * 3600 * 1000;
+      const endDate = expiresDateMs > 0 ? new Date(expiresDateMs) : new Date(fallbackEndMs);
+      const transactionId = active?.transaction_id || active?.original_transaction_id || (typeof receiptData === "string" ? receiptData.slice(0, 50) : "apple_iap");
+
       const sub = await prisma.subscription.upsert({
         where: { userId: dbUser.id },
-        create: { userId: dbUser.id, type: subType, startDate: new Date(), endDate: new Date(endMs), token: receiptData },
-        update: { type: subType, endDate: new Date(endMs), token: receiptData },
+        create: {
+          userId: dbUser.id,
+          platform: "ios",
+          productId: prodId,
+          orderId: String(transactionId),
+          subscriptionState: "ACTIVE",
+          type: subType,
+          startDate,
+          endDate,
+          token: String(transactionId),
+        },
+        update: {
+          platform: "ios",
+          productId: prodId,
+          orderId: String(transactionId),
+          subscriptionState: "ACTIVE",
+          type: subType,
+          startDate,
+          endDate,
+          token: String(transactionId),
+        },
       });
 
       // Emit socket notification
@@ -277,7 +366,13 @@ const verifyAppleIAP = async (req: Request, res: Response, next: NextFunction) =
         },
       });
     }
-    res.status(StatusCodes.OK).json({ valid: true, isPremium, expiresDate: active?.expires_date || null, productId: active?.product_id || null });
+
+    res.status(StatusCodes.OK).json({
+      valid: true,
+      isPremium,
+      expiresDate: active?.expires_date || (active?.expires_date_ms ? new Date(parseInt(active.expires_date_ms)).toISOString() : null),
+      productId: active?.product_id || null,
+    });
   } catch (err) {
     next(err);
   }
@@ -297,7 +392,11 @@ const verifyGoogleIAP = async (req: Request, res: Response, next: NextFunction) 
     if (result.valid) {
       const dbUser = await prisma.user.update({ where: { email: user.email }, data: { role: "PREMIUM" } });
       const subType = isVip ? "yearly" : "monthly";
-      const endMs = result.expiresDateMs ? result.expiresDateMs : Date.now() + 30 * 24 * 3600 * 1000;
+      const startDate = new Date();
+      const durationDays = subType === "yearly" ? 365 : 30;
+      const endMs = result.expiresDateMs ? result.expiresDateMs : startDate.getTime() + durationDays * 24 * 3600 * 1000;
+      const endDate = new Date(endMs);
+
       const sub = await prisma.subscription.upsert({
         where: { userId: dbUser.id },
         create: {
@@ -305,19 +404,22 @@ const verifyGoogleIAP = async (req: Request, res: Response, next: NextFunction) 
           platform: "android",
           productId,
           purchaseToken: token,
+          orderId: token,
           subscriptionState: "ACTIVE",
           type: subType,
-          startDate: new Date(),
-          endDate: new Date(endMs),
+          startDate,
+          endDate,
           token,
         },
         update: {
           platform: "android",
           productId,
           purchaseToken: token,
+          orderId: token,
           subscriptionState: "ACTIVE",
           type: subType,
-          endDate: new Date(endMs),
+          startDate,
+          endDate,
           token,
         },
       });
