@@ -150,6 +150,20 @@ const createDailyCheckIn = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
+const updateDailyCheckIn = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params as Record<string, string>;
+    const result = await OnboardingService.updateDailyCheckIn(id, req.body);
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Daily check-in option updated successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteDailyCheckIn = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as Record<string, string>;
@@ -175,5 +189,6 @@ export const OnboardingController = {
   createSymptom,
   deleteSymptom,
   createDailyCheckIn,
+  updateDailyCheckIn,
   deleteDailyCheckIn,
 };

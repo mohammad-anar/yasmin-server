@@ -23,6 +23,8 @@ router.post("/symptom", auth("ADMIN"), OnboardingController.createSymptom);
 router.delete("/symptom/:id", auth("ADMIN"), OnboardingController.deleteSymptom);
 
 router.post("/daily-check-in", auth("ADMIN"), OnboardingController.createDailyCheckIn);
+router.patch("/daily-check-in/:id", auth("ADMIN"), OnboardingController.updateDailyCheckIn);
+router.put("/daily-check-in/:id", auth("ADMIN"), OnboardingController.updateDailyCheckIn);
 router.delete("/daily-check-in/:id", auth("ADMIN"), OnboardingController.deleteDailyCheckIn);
 
 export const OnboardingRoutes = router;

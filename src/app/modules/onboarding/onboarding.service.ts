@@ -187,6 +187,12 @@ const deleteSymptom = async (id: string) => {
 const createDailyCheckIn = async (data: { icon: string; label: string; isDefault: boolean }) => {
   return await prisma.dailyCheckInOption.create({ data });
 };
+const updateDailyCheckIn = async (id: string, data: Partial<{ icon: string; label: string; isDefault: boolean }>) => {
+  return await prisma.dailyCheckInOption.update({
+    where: { id },
+    data,
+  });
+};
 const deleteDailyCheckIn = async (id: string) => {
   return await prisma.dailyCheckInOption.delete({ where: { id } });
 };
@@ -203,5 +209,6 @@ export const OnboardingService = {
   createSymptom,
   deleteSymptom,
   createDailyCheckIn,
+  updateDailyCheckIn,
   deleteDailyCheckIn,
 };

@@ -52,5 +52,7 @@ All of the following endpoints require an admin token `Authorization: Bearer <ac
 
 ### 6. Manage Daily Check-Ins
 - **Create:** `POST /api/onboarding/daily-check-in`
-  - **Body:** `{ "name": "Mood", "type": "slider" }`
+  - **Body:** `{ "icon": "😴", "label": "Sleep quality", "isDefault": true }`
+- **Update:** `PATCH /api/onboarding/daily-check-in/:id` or `PUT /api/onboarding/daily-check-in/:id`
+  - **Body:** `{ "isDefault": false }`
 - **Delete:** `DELETE /api/onboarding/daily-check-in/:id`
